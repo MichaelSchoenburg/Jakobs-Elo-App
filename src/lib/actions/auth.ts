@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { usernameToEmail } from "@/lib/username";
 import { redirect } from "next/navigation";
 
@@ -27,32 +27,30 @@ export async function signIn(formData: FormData) {
 }
 
 export async function signUp(formData: FormData) {
-  const supabase = await createClient();
+  const adminClient = await createAdminClient();
   const username = (formData.get("username") as string).trim();
   const password = formData.get("password") as string;
 
-  const { error } = await supabase.auth.signUp({
+  // Admin-Client mit email_confirm: true — umgeht E-Mail-Bestätigung komplett
+  const { data, error } = await adminClient.auth.admin.createUser({
     email: usernameToEmail(username),
     password,
-    options: {
-      data: { full_name: username },
-    },
+    email_confirm: true,
+    user_metadata: { full_name: username },
   });
 
   if (error) {
-    if (error.message.includes("already registered")) {
+    if (error.message.includes("already been registered") || error.message.includes("already exists")) {
       return { error: "Dieser Benutzername ist bereits vergeben." };
     }
     return { error: error.message };
   }
 
-  // Update display_name in profile (trigger creates it with full_name)
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) {
-    await supabase
-      .from("profiles")
-      .update({ display_name: username })
-      .eq("id", user.id);
+  // Profil updaten (Trigger legt es an, wir setzen display_name korrekt)
+  if (data.user) {
+    await adminClient.from("profiles").update({
+      display_name: username,
+    }).eq("id", data.user.id);
   }
 
   redirect("/awaiting-approval");
