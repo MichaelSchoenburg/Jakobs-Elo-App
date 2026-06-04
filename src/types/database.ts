@@ -64,9 +64,11 @@ export type Database = {
           player1_elo_after: number | null
           player1_elo_before: number | null
           player1_id: string
+          player1_rounds: number | null
           player2_elo_after: number | null
           player2_elo_before: number | null
           player2_id: string
+          player2_rounds: number | null
           status: Database["public"]["Enums"]["match_status"]
           submitted_at: string
           submitted_by: string
@@ -79,9 +81,11 @@ export type Database = {
           player1_elo_after?: number | null
           player1_elo_before?: number | null
           player1_id: string
+          player1_rounds?: number | null
           player2_elo_after?: number | null
           player2_elo_before?: number | null
           player2_id: string
+          player2_rounds?: number | null
           status?: Database["public"]["Enums"]["match_status"]
           submitted_at?: string
           submitted_by: string
@@ -94,9 +98,11 @@ export type Database = {
           player1_elo_after?: number | null
           player1_elo_before?: number | null
           player1_id?: string
+          player1_rounds?: number | null
           player2_elo_after?: number | null
           player2_elo_before?: number | null
           player2_id?: string
+          player2_rounds?: number | null
           status?: Database["public"]["Enums"]["match_status"]
           submitted_at?: string
           submitted_by?: string

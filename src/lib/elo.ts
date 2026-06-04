@@ -1,11 +1,17 @@
 const K = 16;
 
-export function calculateElo(ratingA: number, ratingB: number, winnerId: "A" | "B") {
+export function calculateElo(
+  ratingA: number,
+  ratingB: number,
+  roundsA: number,
+  roundsB: number
+) {
+  const total = roundsA + roundsB;
+  const scoreA = roundsA / total;
+  const scoreB = roundsB / total;
+
   const expectedA = 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
   const expectedB = 1 - expectedA;
-
-  const scoreA = winnerId === "A" ? 1 : 0;
-  const scoreB = winnerId === "B" ? 1 : 0;
 
   return {
     newRatingA: Math.round(ratingA + K * (scoreA - expectedA)),

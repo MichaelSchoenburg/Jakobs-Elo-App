@@ -13,12 +13,19 @@ interface Player {
   elo: number;
 }
 
+const SCORES = [
+  { label: "3 : 0", loserRounds: 0 },
+  { label: "3 : 1", loserRounds: 1 },
+  { label: "3 : 2", loserRounds: 2 },
+];
+
 export default function NewMatchPage() {
   const router = useRouter();
   const [players, setPlayers] = useState<Player[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [opponentId, setOpponentId] = useState("");
   const [winnerId, setWinnerId] = useState("");
+  const [loserRounds, setLoserRounds] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,6 +46,11 @@ export default function NewMatchPage() {
 
   const opponent = players.find((p) => p.id === opponentId);
 
+  // Endstand-Label aus Gewinnersicht
+  function scoreLabel(lr: number) {
+    return winnerId === currentUserId ? `3 : ${lr}` : `${lr} : 3`;
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
@@ -51,6 +63,8 @@ export default function NewMatchPage() {
     }
   }
 
+  const canSubmit = opponentId && winnerId && loserRounds !== null;
+
   return (
     <div className="max-w-md">
       <h1 className="font-[family-name:var(--font-cinzel)] text-xs tracking-[0.4em] uppercase text-[var(--color-muted)] mb-8">
@@ -58,12 +72,13 @@ export default function NewMatchPage() {
       </h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Gegner */}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs tracking-widest uppercase text-[var(--color-muted)]">Gegner</label>
           <select
             name="opponent_id"
             value={opponentId}
-            onChange={(e) => { setOpponentId(e.target.value); setWinnerId(""); }}
+            onChange={(e) => { setOpponentId(e.target.value); setWinnerId(""); setLoserRounds(null); }}
             required
             className="bg-[var(--color-primary)] border border-[var(--color-border)] text-[var(--color-text)] px-4 py-2.5 outline-none focus:border-[var(--color-accent)] transition-colors appearance-none"
           >
@@ -76,6 +91,7 @@ export default function NewMatchPage() {
           </select>
         </div>
 
+        {/* Gewinner */}
         {opponentId && (
           <div className="flex flex-col gap-3">
             <label className="text-xs tracking-widest uppercase text-[var(--color-muted)]">Gewinner</label>
@@ -87,7 +103,7 @@ export default function NewMatchPage() {
               <button
                 key={id}
                 type="button"
-                onClick={() => setWinnerId(id)}
+                onClick={() => { setWinnerId(id); setLoserRounds(null); }}
                 className={`px-4 py-3 text-sm tracking-wide border text-left transition-colors ${
                   winnerId === id
                     ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--color-primary)] font-bold"
@@ -100,10 +116,36 @@ export default function NewMatchPage() {
           </div>
         )}
 
+        {/* Endstand */}
+        {winnerId && (
+          <div className="flex flex-col gap-3">
+            <label className="text-xs tracking-widest uppercase text-[var(--color-muted)]">
+              Endstand (Siege : Niederlagen)
+            </label>
+            <input type="hidden" name="loser_rounds" value={loserRounds ?? ""} />
+            <div className="grid grid-cols-3 gap-2">
+              {SCORES.map(({ loserRounds: lr }) => (
+                <button
+                  key={lr}
+                  type="button"
+                  onClick={() => setLoserRounds(lr)}
+                  className={`py-3 text-sm font-bold tracking-widest border transition-colors font-[family-name:var(--font-cinzel)] ${
+                    loserRounds === lr
+                      ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--color-primary)]"
+                      : "border-[var(--color-border)] text-[var(--color-muted)] hover:border-[var(--color-accent)] hover:text-[var(--color-text)]"
+                  }`}
+                >
+                  {scoreLabel(lr)}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {error && <p className="text-xs text-[var(--color-danger)]">{error}</p>}
 
         <div className="flex gap-4 pt-2">
-          <Button type="submit" loading={loading} disabled={!opponentId || !winnerId}>
+          <Button type="submit" loading={loading} disabled={!canSubmit}>
             Einreichen
           </Button>
           <Button type="button" variant="ghost" onClick={() => router.back()}>

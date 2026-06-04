@@ -12,13 +12,22 @@ export async function submitMatch(formData: FormData) {
 
   const opponentId = formData.get("opponent_id") as string;
   const winnerId = formData.get("winner_id") as string;
+  const loserRounds = parseInt(formData.get("loser_rounds") as string);
 
-  if (!opponentId || !winnerId) return { error: "Alle Felder ausfüllen." };
+  if (!opponentId || !winnerId || isNaN(loserRounds)) {
+    return { error: "Alle Felder ausfüllen." };
+  }
+
+  // Gewinner hat immer 3, Verlierer 0-2
+  const player1Rounds = winnerId === user.id ? 3 : loserRounds;
+  const player2Rounds = winnerId === user.id ? loserRounds : 3;
 
   const { error } = await supabase.from("matches").insert({
     player1_id: user.id,
     player2_id: opponentId,
     winner_id: winnerId,
+    player1_rounds: player1Rounds,
+    player2_rounds: player2Rounds,
     submitted_by: user.id,
   });
 
@@ -26,7 +35,11 @@ export async function submitMatch(formData: FormData) {
   redirect("/dashboard");
 }
 
-export async function confirmMatch(matchId: string, correctedWinnerId?: string) {
+export async function confirmMatch(
+  matchId: string,
+  correctedWinnerId?: string,
+  correctedLoserRounds?: number
+) {
   const supabase = await createClient();
   const adminClient = await createAdminClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -46,12 +59,35 @@ export async function confirmMatch(matchId: string, correctedWinnerId?: string) 
   const player1 = (match as any).player1 as { id: string; elo: number };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const player2 = (match as any).player2 as { id: string; elo: number };
-  const side: "A" | "B" = effectiveWinnerId === player1.id ? "A" : "B";
-  const { newRatingA, newRatingB, deltaA, deltaB } = calculateElo(player1.elo, player2.elo, side);
+
+  // Runden bestimmen — Korrektur überschreibt eingereichte Werte
+  let p1Rounds = match.player1_rounds ?? 3;
+  let p2Rounds = match.player2_rounds ?? 0;
+
+  if (correctedLoserRounds !== undefined) {
+    if (effectiveWinnerId === player1.id) {
+      p1Rounds = 3;
+      p2Rounds = correctedLoserRounds;
+    } else {
+      p1Rounds = correctedLoserRounds;
+      p2Rounds = 3;
+    }
+  } else if (correctedWinnerId) {
+    // Gewinner geändert, Runden beibehalten aber Seiten tauschen
+    const prevLoserRounds = effectiveWinnerId === player1.id ? p2Rounds : p1Rounds;
+    p1Rounds = effectiveWinnerId === player1.id ? 3 : prevLoserRounds;
+    p2Rounds = effectiveWinnerId === player2.id ? 3 : prevLoserRounds;
+  }
+
+  const { newRatingA, newRatingB, deltaA, deltaB } = calculateElo(
+    player1.elo, player2.elo, p1Rounds, p2Rounds
+  );
 
   await adminClient.from("matches").update({
     status: "confirmed",
     winner_id: effectiveWinnerId,
+    player1_rounds: p1Rounds,
+    player2_rounds: p2Rounds,
     player1_elo_before: player1.elo,
     player2_elo_before: player2.elo,
     player1_elo_after: newRatingA,
