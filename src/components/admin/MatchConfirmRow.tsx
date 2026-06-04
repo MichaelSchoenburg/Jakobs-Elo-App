@@ -16,22 +16,28 @@ interface Match {
   submitter: { display_name: string };
 }
 
-// Gewinner-Runden: 5, 4, 3
-const WINNER_ROUND_OPTIONS = [5, 4, 3];
+const ALL_SCORES: { w: number; l: number }[] = [];
+for (let w = 3; w <= 5; w++) {
+  for (let l = 0; l < w && l <= 4; l++) {
+    ALL_SCORES.push({ w, l });
+  }
+}
 
 export function MatchConfirmRow({ match }: { match: Match }) {
-  const initialWinnerRounds = match.winner_id === match.player1.id
-    ? (match.player1_rounds ?? 3)
-    : (match.player2_rounds ?? 3);
-
   const [correctedWinner, setCorrectedWinner] = useState(match.winner_id);
-  const [winnerRounds, setWinnerRounds] = useState(initialWinnerRounds);
+  const [score, setScore] = useState<{ w: number; l: number }>(() => {
+    const winnerIsP1 = match.winner_id === match.player1.id;
+    return {
+      w: winnerIsP1 ? (match.player1_rounds ?? 3) : (match.player2_rounds ?? 3),
+      l: winnerIsP1 ? (match.player2_rounds ?? 0) : (match.player1_rounds ?? 0),
+    };
+  });
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
 
   async function handleConfirm() {
     setLoading(true);
-    await confirmMatch(match.id, correctedWinner, winnerRounds);
+    await confirmMatch(match.id, correctedWinner, score.w, score.l);
     setDone(true);
   }
 
@@ -40,10 +46,6 @@ export function MatchConfirmRow({ match }: { match: Match }) {
   const date = new Date(match.submitted_at).toLocaleDateString("de-DE");
   const winner = correctedWinner === match.player1.id ? match.player1 : match.player2;
   const loser = correctedWinner === match.player1.id ? match.player2 : match.player1;
-
-  function scoreLabel(wr: number) {
-    return `${wr} : ${5 - wr}`;
-  }
 
   return (
     <div className="px-6 py-5 space-y-4">
@@ -84,27 +86,31 @@ export function MatchConfirmRow({ match }: { match: Match }) {
       </div>
 
       {/* Endstand */}
-      <div className="flex items-center gap-3">
-        <span className="text-[10px] tracking-widest uppercase text-[var(--color-muted)] w-20">Endstand:</span>
-        <div className="flex gap-2">
-          {WINNER_ROUND_OPTIONS.map((wr) => (
-            <button
-              key={wr}
-              onClick={() => setWinnerRounds(wr)}
-              className={`px-3 py-1.5 text-xs font-bold border transition-colors font-[family-name:var(--font-cinzel)] ${
-                winnerRounds === wr
-                  ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--color-primary)]"
-                  : "border-[var(--color-border)] text-[var(--color-muted)] hover:border-[var(--color-accent)]"
-              }`}
-            >
-              {scoreLabel(wr)}
-            </button>
-          ))}
-        </div>
-        <span className="text-[10px] text-[var(--color-muted)]">
-          → {winner.display_name} besiegt {loser.display_name}
+      <div className="space-y-1">
+        <span className="text-[10px] tracking-widest uppercase text-[var(--color-muted)] block mb-2">
+          Endstand ({winner.display_name} : {loser.display_name}):
         </span>
-        <Button onClick={handleConfirm} loading={loading} className="ml-auto">
+        {[3, 4, 5].map((w) => (
+          <div key={w} className="flex gap-1">
+            {ALL_SCORES.filter((s) => s.w === w).map((s) => (
+              <button
+                key={`${s.w}:${s.l}`}
+                onClick={() => setScore(s)}
+                className={`flex-1 py-1.5 text-xs font-bold border transition-colors font-[family-name:var(--font-cinzel)] ${
+                  score.w === s.w && score.l === s.l
+                    ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--color-primary)]"
+                    : "border-[var(--color-border)] text-[var(--color-muted)] hover:border-[var(--color-accent)]"
+                }`}
+              >
+                {s.w} : {s.l}
+              </button>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      <div className="flex justify-end">
+        <Button onClick={handleConfirm} loading={loading}>
           Bestätigen
         </Button>
       </div>

@@ -13,8 +13,13 @@ interface Player {
   elo: number;
 }
 
-// Gewinner-Runden: 5, 4, oder 3 (Verlierer kriegt 5 - winnerRounds)
-const WINNER_ROUND_OPTIONS = [5, 4, 3];
+// Alle gültigen Endstände: Gewinner hat 3–5 Runden, mehr als Verlierer
+const ALL_SCORES: { w: number; l: number }[] = [];
+for (let w = 3; w <= 5; w++) {
+  for (let l = 0; l < w && l <= 4; l++) {
+    ALL_SCORES.push({ w, l });
+  }
+}
 
 export default function NewMatchPage() {
   const router = useRouter();
@@ -22,7 +27,7 @@ export default function NewMatchPage() {
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [opponentId, setOpponentId] = useState("");
   const [winnerId, setWinnerId] = useState("");
-  const [winnerRounds, setWinnerRounds] = useState<number | null>(null);
+  const [score, setScore] = useState<{ w: number; l: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,10 +48,11 @@ export default function NewMatchPage() {
 
   const opponent = players.find((p) => p.id === opponentId);
 
-  // Endstand-Label aus Sicht des eingeloggten Spielers
-  function scoreLabel(wr: number) {
-    const loser = 5 - wr;
-    return winnerId === currentUserId ? `${wr} : ${loser}` : `${loser} : ${wr}`;
+  // Zeige Endstand aus Sicht des eingeloggten Spielers
+  function displayScore(s: { w: number; l: number }) {
+    return winnerId === currentUserId
+      ? `${s.w} : ${s.l}`
+      : `${s.l} : ${s.w}`;
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -61,22 +67,26 @@ export default function NewMatchPage() {
     }
   }
 
-  const canSubmit = opponentId && winnerId && winnerRounds !== null;
+  const canSubmit = opponentId && winnerId && score !== null;
 
   return (
-    <div className="max-w-md">
+    <div className="max-w-lg">
       <h1 className="font-[family-name:var(--font-cinzel)] text-xs tracking-[0.4em] uppercase text-[var(--color-muted)] mb-8">
         Match eintragen
       </h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Hidden score fields */}
+        <input type="hidden" name="winner_rounds" value={score?.w ?? ""} />
+        <input type="hidden" name="loser_rounds" value={score?.l ?? ""} />
+
         {/* Gegner */}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs tracking-widest uppercase text-[var(--color-muted)]">Gegner</label>
           <select
             name="opponent_id"
             value={opponentId}
-            onChange={(e) => { setOpponentId(e.target.value); setWinnerId(""); setWinnerRounds(null); }}
+            onChange={(e) => { setOpponentId(e.target.value); setWinnerId(""); setScore(null); }}
             required
             className="bg-[var(--color-primary)] border border-[var(--color-border)] text-[var(--color-text)] px-4 py-2.5 outline-none focus:border-[var(--color-accent)] transition-colors appearance-none"
           >
@@ -101,7 +111,7 @@ export default function NewMatchPage() {
               <button
                 key={id}
                 type="button"
-                onClick={() => { setWinnerId(id); setWinnerRounds(null); }}
+                onClick={() => { setWinnerId(id); setScore(null); }}
                 className={`px-4 py-3 text-sm tracking-wide border text-left transition-colors ${
                   winnerId === id
                     ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--color-primary)] font-bold"
@@ -118,23 +128,27 @@ export default function NewMatchPage() {
         {winnerId && (
           <div className="flex flex-col gap-3">
             <label className="text-xs tracking-widest uppercase text-[var(--color-muted)]">
-              Endstand (Siege : Niederlagen)
+              Endstand (Ich : Gegner)
             </label>
-            <input type="hidden" name="winner_rounds" value={winnerRounds ?? ""} />
-            <div className="grid grid-cols-3 gap-2">
-              {WINNER_ROUND_OPTIONS.map((wr) => (
-                <button
-                  key={wr}
-                  type="button"
-                  onClick={() => setWinnerRounds(wr)}
-                  className={`py-3 text-sm font-bold tracking-widest border transition-colors font-[family-name:var(--font-cinzel)] ${
-                    winnerRounds === wr
-                      ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--color-primary)]"
-                      : "border-[var(--color-border)] text-[var(--color-muted)] hover:border-[var(--color-accent)] hover:text-[var(--color-text)]"
-                  }`}
-                >
-                  {scoreLabel(wr)}
-                </button>
+            <div className="space-y-1">
+              {/* Gruppiert nach Gewinner-Runden: 3er, 4er, 5er Zeile */}
+              {[3, 4, 5].map((w) => (
+                <div key={w} className="flex gap-1">
+                  {ALL_SCORES.filter((s) => s.w === w).map((s) => (
+                    <button
+                      key={`${s.w}:${s.l}`}
+                      type="button"
+                      onClick={() => setScore(s)}
+                      className={`flex-1 py-2.5 text-sm font-bold border transition-colors font-[family-name:var(--font-cinzel)] ${
+                        score?.w === s.w && score?.l === s.l
+                          ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--color-primary)]"
+                          : "border-[var(--color-border)] text-[var(--color-muted)] hover:border-[var(--color-accent)] hover:text-[var(--color-text)]"
+                      }`}
+                    >
+                      {displayScore(s)}
+                    </button>
+                  ))}
+                </div>
               ))}
             </div>
           </div>

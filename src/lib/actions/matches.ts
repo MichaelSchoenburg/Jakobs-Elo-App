@@ -13,12 +13,12 @@ export async function submitMatch(formData: FormData) {
   const opponentId = formData.get("opponent_id") as string;
   const winnerId = formData.get("winner_id") as string;
   const winnerRounds = parseInt(formData.get("winner_rounds") as string);
+  const loserRounds = parseInt(formData.get("loser_rounds") as string);
 
-  if (!opponentId || !winnerId || isNaN(winnerRounds)) {
+  if (!opponentId || !winnerId || isNaN(winnerRounds) || isNaN(loserRounds)) {
     return { error: "Alle Felder ausfüllen." };
   }
 
-  const loserRounds = 5 - winnerRounds;
   const player1Rounds = winnerId === user.id ? winnerRounds : loserRounds;
   const player2Rounds = winnerId === user.id ? loserRounds : winnerRounds;
 
@@ -38,7 +38,8 @@ export async function submitMatch(formData: FormData) {
 export async function confirmMatch(
   matchId: string,
   correctedWinnerId?: string,
-  correctedWinnerRounds?: number
+  correctedWinnerRounds?: number,
+  correctedLoserRounds?: number
 ) {
   const supabase = await createClient();
   const adminClient = await createAdminClient();
@@ -64,17 +65,16 @@ export async function confirmMatch(
   let p1Rounds = match.player1_rounds ?? 3;
   let p2Rounds = match.player2_rounds ?? 2;
 
-  if (correctedWinnerRounds !== undefined) {
-    const loserRounds = 5 - correctedWinnerRounds;
+  if (correctedWinnerRounds !== undefined && correctedLoserRounds !== undefined) {
     if (effectiveWinnerId === player1.id) {
       p1Rounds = correctedWinnerRounds;
-      p2Rounds = loserRounds;
+      p2Rounds = correctedLoserRounds;
     } else {
-      p1Rounds = loserRounds;
+      p1Rounds = correctedLoserRounds;
       p2Rounds = correctedWinnerRounds;
     }
   } else if (correctedWinnerId) {
-    // Gewinner wurde getauscht — Runden spiegeln
+    // Nur Gewinner geändert — Runden spiegeln
     const tmp = p1Rounds;
     p1Rounds = p2Rounds;
     p2Rounds = tmp;
