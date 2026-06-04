@@ -16,9 +16,11 @@ export async function signIn(formData: FormData) {
 
   if (error) return { error: "Ungültiger Benutzername oder Passwort." };
 
+  const { data: { user } } = await supabase.auth.getUser();
   const { data: profile } = await supabase
     .from("profiles")
     .select("is_admin, is_approved")
+    .eq("id", user!.id)
     .single();
 
   if (profile?.is_admin) redirect("/admin");
