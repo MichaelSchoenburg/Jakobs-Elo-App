@@ -16,10 +16,10 @@ interface Match {
   submitter: { display_name: string };
 }
 
-// Immer 5 Runden gespielt, Gewinner braucht Mehrheit
+// Best of Five: First to 3 wins — Gewinner hat immer 3
 const ALL_SCORES = [
-  { w: 5, l: 0 },
-  { w: 4, l: 1 },
+  { w: 3, l: 0 },
+  { w: 3, l: 1 },
   { w: 3, l: 2 },
 ];
 
