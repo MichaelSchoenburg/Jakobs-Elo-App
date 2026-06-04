@@ -13,13 +13,12 @@ interface Player {
   elo: number;
 }
 
-// Alle gültigen Endstände: Gewinner hat 3–5 Runden, mehr als Verlierer
-const ALL_SCORES: { w: number; l: number }[] = [];
-for (let w = 3; w <= 5; w++) {
-  for (let l = 0; l < w && l <= 4; l++) {
-    ALL_SCORES.push({ w, l });
-  }
-}
+// Immer 5 Runden gespielt, Gewinner braucht Mehrheit
+const ALL_SCORES = [
+  { w: 5, l: 0 },
+  { w: 4, l: 1 },
+  { w: 3, l: 2 },
+];
 
 export default function NewMatchPage() {
   const router = useRouter();
@@ -130,25 +129,20 @@ export default function NewMatchPage() {
             <label className="text-xs tracking-widest uppercase text-[var(--color-muted)]">
               Endstand (Ich : Gegner)
             </label>
-            <div className="space-y-1">
-              {/* Gruppiert nach Gewinner-Runden: 3er, 4er, 5er Zeile */}
-              {[3, 4, 5].map((w) => (
-                <div key={w} className="flex gap-1">
-                  {ALL_SCORES.filter((s) => s.w === w).map((s) => (
-                    <button
-                      key={`${s.w}:${s.l}`}
-                      type="button"
-                      onClick={() => setScore(s)}
-                      className={`flex-1 py-2.5 text-sm font-bold border transition-colors font-[family-name:var(--font-cinzel)] ${
-                        score?.w === s.w && score?.l === s.l
-                          ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--color-primary)]"
-                          : "border-[var(--color-border)] text-[var(--color-muted)] hover:border-[var(--color-accent)] hover:text-[var(--color-text)]"
-                      }`}
-                    >
-                      {displayScore(s)}
-                    </button>
-                  ))}
-                </div>
+            <div className="flex gap-2">
+              {ALL_SCORES.map((s) => (
+                <button
+                  key={`${s.w}:${s.l}`}
+                  type="button"
+                  onClick={() => setScore(s)}
+                  className={`flex-1 py-3 text-sm font-bold border transition-colors font-[family-name:var(--font-cinzel)] ${
+                    score?.w === s.w && score?.l === s.l
+                      ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--color-primary)]"
+                      : "border-[var(--color-border)] text-[var(--color-muted)] hover:border-[var(--color-accent)] hover:text-[var(--color-text)]"
+                  }`}
+                >
+                  {displayScore(s)}
+                </button>
               ))}
             </div>
           </div>

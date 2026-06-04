@@ -16,12 +16,12 @@ interface Match {
   submitter: { display_name: string };
 }
 
-const ALL_SCORES: { w: number; l: number }[] = [];
-for (let w = 3; w <= 5; w++) {
-  for (let l = 0; l < w && l <= 4; l++) {
-    ALL_SCORES.push({ w, l });
-  }
-}
+// Immer 5 Runden gespielt, Gewinner braucht Mehrheit
+const ALL_SCORES = [
+  { w: 5, l: 0 },
+  { w: 4, l: 1 },
+  { w: 3, l: 2 },
+];
 
 export function MatchConfirmRow({ match }: { match: Match }) {
   const [correctedWinner, setCorrectedWinner] = useState(match.winner_id);
@@ -90,23 +90,21 @@ export function MatchConfirmRow({ match }: { match: Match }) {
         <span className="text-[10px] tracking-widest uppercase text-[var(--color-muted)] block mb-2">
           Endstand ({winner.display_name} : {loser.display_name}):
         </span>
-        {[3, 4, 5].map((w) => (
-          <div key={w} className="flex gap-1">
-            {ALL_SCORES.filter((s) => s.w === w).map((s) => (
-              <button
-                key={`${s.w}:${s.l}`}
-                onClick={() => setScore(s)}
-                className={`flex-1 py-1.5 text-xs font-bold border transition-colors font-[family-name:var(--font-cinzel)] ${
-                  score.w === s.w && score.l === s.l
-                    ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--color-primary)]"
-                    : "border-[var(--color-border)] text-[var(--color-muted)] hover:border-[var(--color-accent)]"
-                }`}
-              >
-                {s.w} : {s.l}
-              </button>
-            ))}
-          </div>
-        ))}
+        <div className="flex gap-2">
+          {ALL_SCORES.map((s) => (
+            <button
+              key={`${s.w}:${s.l}`}
+              onClick={() => setScore(s)}
+              className={`flex-1 py-1.5 text-xs font-bold border transition-colors font-[family-name:var(--font-cinzel)] ${
+                score.w === s.w && score.l === s.l
+                  ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--color-primary)]"
+                  : "border-[var(--color-border)] text-[var(--color-muted)] hover:border-[var(--color-accent)]"
+              }`}
+            >
+              {s.w} : {s.l}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="flex justify-end">
