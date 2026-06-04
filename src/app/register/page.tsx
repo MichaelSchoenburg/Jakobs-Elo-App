@@ -55,20 +55,14 @@ export default function RegisterPage() {
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <Input
-              label="Anzeigename"
-              name="display_name"
+              label="Benutzername"
+              name="username"
               type="text"
-              autoComplete="name"
+              autoComplete="username"
+              autoCapitalize="none"
               required
               minLength={2}
               maxLength={32}
-            />
-            <Input
-              label="E-Mail"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
             />
             <Input
               label="Passwort"

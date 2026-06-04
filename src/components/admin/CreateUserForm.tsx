@@ -27,9 +27,8 @@ export function CreateUserForm() {
 
   return (
     <div className="border border-[var(--color-border)] p-6">
-      <form onSubmit={handleSubmit} className="grid grid-cols-3 gap-4 items-end">
-        <Input label="Anzeigename" name="display_name" required minLength={2} />
-        <Input label="E-Mail" name="email" type="email" required />
+      <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4 items-end">
+        <Input label="Benutzername" name="username" required minLength={2} maxLength={32} autoCapitalize="none" />
         <Input label="Passwort" name="password" type="password" required minLength={8} />
         <div className="col-span-3 flex items-center gap-4">
           <Button type="submit" loading={loading}>Spieler anlegen</Button>

@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient, createClient } from "@/lib/supabase/server";
+import { usernameToEmail } from "@/lib/username";
 import { revalidatePath } from "next/cache";
 
 export async function approveUser(userId: string) {
@@ -18,22 +19,21 @@ export async function deleteUser(userId: string) {
 export async function createUser(formData: FormData) {
   const adminClient = await createAdminClient();
 
-  const email = formData.get("email") as string;
+  const username = (formData.get("username") as string).trim();
   const password = formData.get("password") as string;
-  const displayName = formData.get("display_name") as string;
 
   const { data, error } = await adminClient.auth.admin.createUser({
-    email,
+    email: usernameToEmail(username),
     password,
     email_confirm: true,
-    user_metadata: { full_name: displayName },
+    user_metadata: { full_name: username },
   });
 
   if (error) return { error: error.message };
 
   if (data.user) {
     await adminClient.from("profiles").update({
-      display_name: displayName,
+      display_name: username,
       is_approved: true,
     }).eq("id", data.user.id);
   }

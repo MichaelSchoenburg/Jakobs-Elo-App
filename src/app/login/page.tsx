@@ -18,7 +18,7 @@ export default function LoginPage() {
     setError(null);
     const result = await signIn(new FormData(e.currentTarget));
     if (result?.error) {
-      setError("Ungültige Anmeldedaten.");
+      setError(result.error);
       setLoading(false);
     }
   }
@@ -47,10 +47,11 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <Input
-              label="E-Mail"
-              name="email"
-              type="email"
-              autoComplete="email"
+              label="Benutzername"
+              name="username"
+              type="text"
+              autoComplete="username"
+              autoCapitalize="none"
               required
             />
             <Input

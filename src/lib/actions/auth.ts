@@ -1,17 +1,20 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { usernameToEmail } from "@/lib/username";
 import { redirect } from "next/navigation";
 
 export async function signIn(formData: FormData) {
   const supabase = await createClient();
+  const username = formData.get("username") as string;
+  const password = formData.get("password") as string;
 
   const { error } = await supabase.auth.signInWithPassword({
-    email: formData.get("email") as string,
-    password: formData.get("password") as string,
+    email: usernameToEmail(username),
+    password,
   });
 
-  if (error) return { error: error.message };
+  if (error) return { error: "Ungültiger Benutzername oder Passwort." };
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -25,27 +28,30 @@ export async function signIn(formData: FormData) {
 
 export async function signUp(formData: FormData) {
   const supabase = await createClient();
-
-  const email = formData.get("email") as string;
+  const username = (formData.get("username") as string).trim();
   const password = formData.get("password") as string;
-  const displayName = formData.get("display_name") as string;
 
   const { error } = await supabase.auth.signUp({
-    email,
+    email: usernameToEmail(username),
     password,
     options: {
-      data: { full_name: displayName },
+      data: { full_name: username },
     },
   });
 
-  if (error) return { error: error.message };
+  if (error) {
+    if (error.message.includes("already registered")) {
+      return { error: "Dieser Benutzername ist bereits vergeben." };
+    }
+    return { error: error.message };
+  }
 
-  // Update display_name in profile (trigger creates profile with full_name from metadata)
+  // Update display_name in profile (trigger creates it with full_name)
   const { data: { user } } = await supabase.auth.getUser();
   if (user) {
     await supabase
       .from("profiles")
-      .update({ display_name: displayName })
+      .update({ display_name: username })
       .eq("id", user.id);
   }
 
