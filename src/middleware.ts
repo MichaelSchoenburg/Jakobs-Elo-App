@@ -4,59 +4,32 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
-        },
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    return supabaseResponse;
+  }
+
+  const supabase = createServerClient(supabaseUrl, supabaseKey, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
       },
-    }
-  );
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value }) =>
+          request.cookies.set(name, value)
+        );
+        supabaseResponse = NextResponse.next({ request });
+        cookiesToSet.forEach(({ name, value, options }) =>
+          supabaseResponse.cookies.set(name, value, options)
+        );
+      },
+    },
+  });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const { pathname } = request.nextUrl;
-
-  // Protect /dashboard and /admin routes
-  if (pathname.startsWith("/dashboard") || pathname.startsWith("/admin")) {
-    if (!user) {
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
-
-    // Fetch profile to check approval and admin status
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("is_approved, is_admin")
-      .eq("id", user.id)
-      .single();
-
-    if (pathname.startsWith("/admin") && !profile?.is_admin) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
-    }
-
-    if (pathname.startsWith("/dashboard") && !profile?.is_approved) {
-      return NextResponse.redirect(new URL("/awaiting-approval", request.url));
-    }
-  }
-
-  // Redirect logged-in users away from login/register
-  if ((pathname === "/login" || pathname === "/register") && user) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
+  // Only refreshes the session — route protection is handled in layouts
+  await supabase.auth.getUser();
 
   return supabaseResponse;
 }
