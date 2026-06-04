@@ -183,6 +183,10 @@ export type Database = {
     Functions: {
       is_admin: { Args: never; Returns: boolean }
       is_approved: { Args: never; Returns: boolean }
+      confirm_match_stats: {
+        Args: { p1_id: string; p2_id: string; p1_elo: number; p2_elo: number; winner: string }
+        Returns: void
+      }
     }
     Enums: {
       match_status: "pending" | "confirmed"
