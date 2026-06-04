@@ -12,15 +12,15 @@ export async function submitMatch(formData: FormData) {
 
   const opponentId = formData.get("opponent_id") as string;
   const winnerId = formData.get("winner_id") as string;
-  const loserRounds = parseInt(formData.get("loser_rounds") as string);
+  const winnerRounds = parseInt(formData.get("winner_rounds") as string);
 
-  if (!opponentId || !winnerId || isNaN(loserRounds)) {
+  if (!opponentId || !winnerId || isNaN(winnerRounds)) {
     return { error: "Alle Felder ausfüllen." };
   }
 
-  // Gewinner hat immer 3, Verlierer 0-2
-  const player1Rounds = winnerId === user.id ? 3 : loserRounds;
-  const player2Rounds = winnerId === user.id ? loserRounds : 3;
+  const loserRounds = 5 - winnerRounds;
+  const player1Rounds = winnerId === user.id ? winnerRounds : loserRounds;
+  const player2Rounds = winnerId === user.id ? loserRounds : winnerRounds;
 
   const { error } = await supabase.from("matches").insert({
     player1_id: user.id,
@@ -38,7 +38,7 @@ export async function submitMatch(formData: FormData) {
 export async function confirmMatch(
   matchId: string,
   correctedWinnerId?: string,
-  correctedLoserRounds?: number
+  correctedWinnerRounds?: number
 ) {
   const supabase = await createClient();
   const adminClient = await createAdminClient();
@@ -62,21 +62,22 @@ export async function confirmMatch(
 
   // Runden bestimmen — Korrektur überschreibt eingereichte Werte
   let p1Rounds = match.player1_rounds ?? 3;
-  let p2Rounds = match.player2_rounds ?? 0;
+  let p2Rounds = match.player2_rounds ?? 2;
 
-  if (correctedLoserRounds !== undefined) {
+  if (correctedWinnerRounds !== undefined) {
+    const loserRounds = 5 - correctedWinnerRounds;
     if (effectiveWinnerId === player1.id) {
-      p1Rounds = 3;
-      p2Rounds = correctedLoserRounds;
+      p1Rounds = correctedWinnerRounds;
+      p2Rounds = loserRounds;
     } else {
-      p1Rounds = correctedLoserRounds;
-      p2Rounds = 3;
+      p1Rounds = loserRounds;
+      p2Rounds = correctedWinnerRounds;
     }
   } else if (correctedWinnerId) {
-    // Gewinner geändert, Runden beibehalten aber Seiten tauschen
-    const prevLoserRounds = effectiveWinnerId === player1.id ? p2Rounds : p1Rounds;
-    p1Rounds = effectiveWinnerId === player1.id ? 3 : prevLoserRounds;
-    p2Rounds = effectiveWinnerId === player2.id ? 3 : prevLoserRounds;
+    // Gewinner wurde getauscht — Runden spiegeln
+    const tmp = p1Rounds;
+    p1Rounds = p2Rounds;
+    p2Rounds = tmp;
   }
 
   const { newRatingA, newRatingB, deltaA, deltaB } = calculateElo(

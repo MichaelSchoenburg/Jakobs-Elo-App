@@ -13,11 +13,8 @@ interface Player {
   elo: number;
 }
 
-const SCORES = [
-  { label: "3 : 0", loserRounds: 0 },
-  { label: "3 : 1", loserRounds: 1 },
-  { label: "3 : 2", loserRounds: 2 },
-];
+// Gewinner-Runden: 5, 4, oder 3 (Verlierer kriegt 5 - winnerRounds)
+const WINNER_ROUND_OPTIONS = [5, 4, 3];
 
 export default function NewMatchPage() {
   const router = useRouter();
@@ -25,7 +22,7 @@ export default function NewMatchPage() {
   const [currentUserId, setCurrentUserId] = useState<string>("");
   const [opponentId, setOpponentId] = useState("");
   const [winnerId, setWinnerId] = useState("");
-  const [loserRounds, setLoserRounds] = useState<number | null>(null);
+  const [winnerRounds, setWinnerRounds] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,9 +43,10 @@ export default function NewMatchPage() {
 
   const opponent = players.find((p) => p.id === opponentId);
 
-  // Endstand-Label aus Gewinnersicht
-  function scoreLabel(lr: number) {
-    return winnerId === currentUserId ? `3 : ${lr}` : `${lr} : 3`;
+  // Endstand-Label aus Sicht des eingeloggten Spielers
+  function scoreLabel(wr: number) {
+    const loser = 5 - wr;
+    return winnerId === currentUserId ? `${wr} : ${loser}` : `${loser} : ${wr}`;
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -63,7 +61,7 @@ export default function NewMatchPage() {
     }
   }
 
-  const canSubmit = opponentId && winnerId && loserRounds !== null;
+  const canSubmit = opponentId && winnerId && winnerRounds !== null;
 
   return (
     <div className="max-w-md">
@@ -78,7 +76,7 @@ export default function NewMatchPage() {
           <select
             name="opponent_id"
             value={opponentId}
-            onChange={(e) => { setOpponentId(e.target.value); setWinnerId(""); setLoserRounds(null); }}
+            onChange={(e) => { setOpponentId(e.target.value); setWinnerId(""); setWinnerRounds(null); }}
             required
             className="bg-[var(--color-primary)] border border-[var(--color-border)] text-[var(--color-text)] px-4 py-2.5 outline-none focus:border-[var(--color-accent)] transition-colors appearance-none"
           >
@@ -103,7 +101,7 @@ export default function NewMatchPage() {
               <button
                 key={id}
                 type="button"
-                onClick={() => { setWinnerId(id); setLoserRounds(null); }}
+                onClick={() => { setWinnerId(id); setWinnerRounds(null); }}
                 className={`px-4 py-3 text-sm tracking-wide border text-left transition-colors ${
                   winnerId === id
                     ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--color-primary)] font-bold"
@@ -122,20 +120,20 @@ export default function NewMatchPage() {
             <label className="text-xs tracking-widest uppercase text-[var(--color-muted)]">
               Endstand (Siege : Niederlagen)
             </label>
-            <input type="hidden" name="loser_rounds" value={loserRounds ?? ""} />
+            <input type="hidden" name="winner_rounds" value={winnerRounds ?? ""} />
             <div className="grid grid-cols-3 gap-2">
-              {SCORES.map(({ loserRounds: lr }) => (
+              {WINNER_ROUND_OPTIONS.map((wr) => (
                 <button
-                  key={lr}
+                  key={wr}
                   type="button"
-                  onClick={() => setLoserRounds(lr)}
+                  onClick={() => setWinnerRounds(wr)}
                   className={`py-3 text-sm font-bold tracking-widest border transition-colors font-[family-name:var(--font-cinzel)] ${
-                    loserRounds === lr
+                    winnerRounds === wr
                       ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--color-primary)]"
                       : "border-[var(--color-border)] text-[var(--color-muted)] hover:border-[var(--color-accent)] hover:text-[var(--color-text)]"
                   }`}
                 >
-                  {scoreLabel(lr)}
+                  {scoreLabel(wr)}
                 </button>
               ))}
             </div>

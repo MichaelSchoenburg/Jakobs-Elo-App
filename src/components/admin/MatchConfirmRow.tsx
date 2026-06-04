@@ -16,21 +16,22 @@ interface Match {
   submitter: { display_name: string };
 }
 
-const LOSER_ROUND_OPTIONS = [0, 1, 2];
+// Gewinner-Runden: 5, 4, 3
+const WINNER_ROUND_OPTIONS = [5, 4, 3];
 
 export function MatchConfirmRow({ match }: { match: Match }) {
-  const initialLoserRounds = match.winner_id === match.player1.id
-    ? (match.player2_rounds ?? 0)
-    : (match.player1_rounds ?? 0);
+  const initialWinnerRounds = match.winner_id === match.player1.id
+    ? (match.player1_rounds ?? 3)
+    : (match.player2_rounds ?? 3);
 
   const [correctedWinner, setCorrectedWinner] = useState(match.winner_id);
-  const [loserRounds, setLoserRounds] = useState(initialLoserRounds);
+  const [winnerRounds, setWinnerRounds] = useState(initialWinnerRounds);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
 
   async function handleConfirm() {
     setLoading(true);
-    await confirmMatch(match.id, correctedWinner, loserRounds);
+    await confirmMatch(match.id, correctedWinner, winnerRounds);
     setDone(true);
   }
 
@@ -40,8 +41,8 @@ export function MatchConfirmRow({ match }: { match: Match }) {
   const winner = correctedWinner === match.player1.id ? match.player1 : match.player2;
   const loser = correctedWinner === match.player1.id ? match.player2 : match.player1;
 
-  function scoreLabel(lr: number) {
-    return `3 : ${lr}`;
+  function scoreLabel(wr: number) {
+    return `${wr} : ${5 - wr}`;
   }
 
   return (
@@ -86,17 +87,17 @@ export function MatchConfirmRow({ match }: { match: Match }) {
       <div className="flex items-center gap-3">
         <span className="text-[10px] tracking-widest uppercase text-[var(--color-muted)] w-20">Endstand:</span>
         <div className="flex gap-2">
-          {LOSER_ROUND_OPTIONS.map((lr) => (
+          {WINNER_ROUND_OPTIONS.map((wr) => (
             <button
-              key={lr}
-              onClick={() => setLoserRounds(lr)}
+              key={wr}
+              onClick={() => setWinnerRounds(wr)}
               className={`px-3 py-1.5 text-xs font-bold border transition-colors font-[family-name:var(--font-cinzel)] ${
-                loserRounds === lr
+                winnerRounds === wr
                   ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--color-primary)]"
                   : "border-[var(--color-border)] text-[var(--color-muted)] hover:border-[var(--color-accent)]"
               }`}
             >
-              {scoreLabel(lr)}
+              {scoreLabel(wr)}
             </button>
           ))}
         </div>
